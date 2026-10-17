@@ -1,0 +1,12 @@
+{
+  "name": "avertistech-clone",
+  "version": "1.0.0",
+  "description": "Clone of Avertis Infotech website",
+  "scripts": {
+    "dev": "npx --yes live-server --port=3000 --open=index.html",
+    "start": "npx --yes live-server --port=3000 --open=index.html"
+  },
+  "keywords": ["avertistech", "website", "clone"],
+  "author": "",
+  "license": "ISC"
+}
