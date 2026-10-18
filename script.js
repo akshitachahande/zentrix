@@ -84,9 +84,20 @@ if (hamburger && navLinks) {
    ============================================= */
 const validRoutes = ['home', 'about', 'services', 'advantage', 'contact', 'quote'];
 
-function navigateTo(targetRoute) {
-  let cleanRoute = (targetRoute || '').replace(/^#\/?/, '').replace(/^\//, '').toLowerCase();
-  
+// Normalise "/about", "#about", "about/" etc. to a bare route name
+function toRoute(value) {
+  return (value || '').replace(/^#\/?/, '').replace(/^\/+|\/+$/g, '').toLowerCase();
+}
+
+function routeToPath(route, subAnchor) {
+  const path = route === 'home' ? '/' : `/${route}`;
+  return subAnchor ? `${path}#${subAnchor}` : path;
+}
+
+// mode: 'push' adds a history entry, 'replace' rewrites the current one, 'none' leaves it
+function navigateTo(targetRoute, mode = 'push') {
+  let cleanRoute = toRoute(targetRoute);
+
   // If route is a service anchor (e.g. service-ai, service-consulting), activate services and scroll
   let subAnchor = null;
   if (cleanRoute.startsWith('service-')) {
@@ -106,7 +117,7 @@ function navigateTo(targetRoute) {
 
   // 2. Update active link in navbar
   document.querySelectorAll('.nav-links .nav-link').forEach(link => {
-    const href = link.getAttribute('href').replace(/^#\/?/, '').replace(/^\//, '').toLowerCase();
+    const href = toRoute(link.getAttribute('href')) || 'home';
     link.classList.toggle('active', href === cleanRoute);
   });
 
@@ -124,9 +135,10 @@ function navigateTo(targetRoute) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // 4. Update URL hash if needed
-  if (window.location.hash !== `#${cleanRoute}`) {
-    history.pushState(null, '', `#${cleanRoute}`);
+  // 4. Update the URL to a clean path (e.g. /about) if needed
+  const newPath = routeToPath(cleanRoute, subAnchor);
+  if (mode !== 'none' && window.location.pathname + window.location.hash !== newPath) {
+    history[mode === 'replace' ? 'replaceState' : 'pushState'](null, '', newPath);
   }
 }
 
@@ -140,7 +152,7 @@ document.addEventListener('click', (e) => {
     return;
   }
 
-  const route = rawHref.replace(/^#\/?/, '').replace(/^\//, '').toLowerCase();
+  const route = toRoute(rawHref) || 'home';
   if (validRoutes.includes(route) || route.startsWith('service-')) {
     e.preventDefault();
     navigateTo(route);
@@ -150,15 +162,21 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Handle browser back/forward and hash changes
-window.addEventListener('hashchange', () => {
-  const hash = window.location.hash.slice(1);
-  if (hash) navigateTo(hash);
+// Read the route from the current URL. Old hash links (/#about) still work.
+function routeFromLocation() {
+  const hash = toRoute(window.location.hash);
+  const path = toRoute(window.location.pathname.replace(/\/index\.html$/, '/'));
+  if (hash.startsWith('service-')) return hash;
+  return path || hash || 'home';
+}
+
+// Handle browser back/forward
+window.addEventListener('popstate', () => {
+  navigateTo(routeFromLocation(), 'none');
 });
 
-// Initialize on page load
-const initialHash = window.location.hash.slice(1) || 'home';
-navigateTo(initialHash);
+// Initialize on page load, replacing legacy hash URLs with clean paths
+navigateTo(routeFromLocation(), 'replace');
 
 /* ---- Counter animation for stats (triggered by intersection) ---- */
 function animateCounter(el, target, suffix = '', duration = 1800) {

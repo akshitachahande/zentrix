@@ -4,7 +4,7 @@ A responsive, single-page marketing website for an IT services company, built wi
 
 ## Features
 
-- **Six page views** in one file — Home, About, Services, Advantage, Contact and Get a Quote — switched with hash-based routing (`#home`, `#contact`, …), including browser back/forward support
+- **Six page views** in one file — Home, About, Services, Advantage, Contact and Get a Quote — each with its own clean URL (`/`, `/about`, `/contact`, …), including browser back/forward support
 - **Dark / light theme** toggle, remembered across visits
 - **Services carousel** with arrows, dots and touch swipe
 - **Animated stats** that count up when scrolled into view

@@ -357,7 +357,7 @@ body.menu-open::before {
 .hero-bg-image {
   position: absolute;
   inset: 0;
-  background-image: url('office-hero.jpg');
+  background-image: url('/office-hero.jpg');
   background-size: cover;
   background-position: center 30%;
   background-repeat: no-repeat;
