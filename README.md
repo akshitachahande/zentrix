@@ -6,8 +6,6 @@ A responsive, single-page marketing website for an IT services company, built wi
 
 - **Six page views** in one file — Home, About, Services, Advantage, Contact and Get a Quote — each with its own clean URL (`/`, `/about`, `/contact`, …), including browser back/forward support
 - **Dark / light theme** toggle, remembered across visits
-- **Services carousel** with arrows, dots and touch swipe
-- **Animated stats** that count up when scrolled into view
 - **Mobile-friendly** layout with a hamburger menu
 - **Contact & quote forms** stored in Supabase
 
@@ -25,8 +23,8 @@ A responsive, single-page marketing website for an IT services company, built wi
 ```
 ├── index.html         # All page views, navbar, footer and forms
 ├── style.css          # Styles and dark/light theme tokens
-├── script.js          # Routing, theme, carousel, counters, Supabase forms
-├── office-hero.jpg    # Hero background image
+├── script.js          # Routing, theme, mobile menu, Supabase forms
+├── office-hero.jpg    # Hero image
 ├── package.json       # npm dev/start scripts
 ├── start-server.ps1   # Local server without Node.js (Windows)
 └── server.ps1         # Alternative PowerShell server

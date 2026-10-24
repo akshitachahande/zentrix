@@ -1,5 +1,5 @@
 # =============================================
-# start-server.ps1  -  Avertis Tech Clone
+# start-server.ps1  -  Zentrix Website
 # Runs a simple HTTP server on localhost:3000
 # =============================================
 $port = 3000

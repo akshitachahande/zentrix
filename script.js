@@ -18,31 +18,19 @@ function applyTheme(theme) {
 }
 
 // Load saved theme
-const savedTheme = localStorage.getItem('zentrix-theme') || 'dark';
+const savedTheme = localStorage.getItem('zentrix-theme') || 'light';
 applyTheme(savedTheme);
 
 if (themeToggle) {
   themeToggle.addEventListener('click', () => {
-    const current = html.getAttribute('data-theme') || 'dark';
+    const current = html.getAttribute('data-theme') || 'light';
     const next = current === 'dark' ? 'light' : 'dark';
     applyTheme(next);
-    // Spin animation on toggle
-    themeToggle.style.transform = 'rotate(360deg) scale(1.15)';
-    setTimeout(() => { themeToggle.style.transform = ''; }, 400);
   });
 }
 
-/* ---- Navbar scroll effect ---- */
-const navbar = document.getElementById('navbar');
-window.addEventListener('scroll', () => {
-  if (window.scrollY > 40) {
-    navbar.classList.add('scrolled');
-  } else {
-    navbar.classList.remove('scrolled');
-  }
-});
-
 /* ---- Hamburger menu ---- */
+const navbar = document.getElementById('navbar');
 const hamburger = document.getElementById('hamburger');
 const navLinks = document.getElementById('nav-links');
 function setMenu(open) {
@@ -75,12 +63,12 @@ if (hamburger && navLinks) {
     }
   });
   window.addEventListener('resize', () => {
-    if (window.innerWidth > 768) setMenu(false);
+    if (window.innerWidth > 820) setMenu(false);
   });
 }
 
 /* =============================================
-   CLIENT-SIDE PAGE ROUTING (Matching avertistech.com)
+   CLIENT-SIDE PAGE ROUTING (Zentrix)
    ============================================= */
 const validRoutes = ['home', 'about', 'services', 'advantage', 'contact', 'quote'];
 
@@ -178,147 +166,169 @@ window.addEventListener('popstate', () => {
 // Initialize on page load, replacing legacy hash URLs with clean paths
 navigateTo(routeFromLocation(), 'replace');
 
-/* ---- Counter animation for stats (triggered by intersection) ---- */
-function animateCounter(el, target, suffix = '', duration = 1800) {
-  const start = performance.now();
-  const update = (now) => {
-    const elapsed = now - start;
-    const progress = Math.min(elapsed / duration, 1);
-    const eased = 1 - Math.pow(1 - progress, 3);
-    const current = Math.round(eased * target);
-    el.textContent = current + suffix;
-    if (progress < 1) requestAnimationFrame(update);
-  };
-  requestAnimationFrame(update);
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isPhone = window.matchMedia('(max-width: 600px)').matches;
+const canAnimate = !reduceMotion && 'IntersectionObserver' in window;
+
+/* ---- Navbar shadow, reading progress bar and hero parallax ---- */
+const progressBar = document.createElement('div');
+progressBar.className = 'scroll-progress';
+navbar.appendChild(progressBar);
+const heroImg = document.querySelector('.hero-figure img');
+
+let scrollTicking = false;
+function onScrollFrame() {
+  const y = window.scrollY;
+  const max = document.documentElement.scrollHeight - window.innerHeight;
+  navbar.classList.toggle('scrolled', y > 8);
+  progressBar.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
+  // Photo drifts slightly slower than the page while the hero is on screen
+  if (heroImg && !reduceMotion && y < window.innerHeight * 1.2) {
+    heroImg.style.transform = `translateY(${Math.min(y * 0.04, 16)}px)`;
+  }
+  scrollTicking = false;
 }
+window.addEventListener('scroll', () => {
+  if (!scrollTicking) { requestAnimationFrame(onScrollFrame); scrollTicking = true; }
+}, { passive: true });
+onScrollFrame();
 
-const statsObserver = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      const statNums = entry.target.querySelectorAll('.stat-num');
-      statNums.forEach(el => {
-        const target = parseInt(el.getAttribute('data-target')) || 0;
-        const suffix = el.getAttribute('data-suffix') || '';
-        animateCounter(el, target, suffix);
-      });
-      statsObserver.unobserve(entry.target);
-    }
-  });
-}, { threshold: 0.3 });
-
-const heroStats = document.getElementById('hero-stats');
-if (heroStats) statsObserver.observe(heroStats);
-
-/* ---- Core IT Services Carousel (Home Page) ---- */
-(function initServicesCarousel() {
-  const track = document.getElementById('services-track');
-  const prevBtn = document.getElementById('services-prev');
-  const nextBtn = document.getElementById('services-next');
-  const dotsContainer = document.getElementById('carousel-dots');
-
-  if (!track || !prevBtn || !nextBtn || !dotsContainer) return;
-
-  const cards = Array.from(track.children);
-  const totalCards = cards.length;
-  let currentIndex = 0;
-
-  function getVisibleCount() {
-    const w = window.innerWidth;
-    if (w <= 768) return 1;
-    if (w <= 1100) return 2;
-    return 3;
-  }
-
-  function getCardWidth() {
-    if (cards.length === 0) return 0;
-    const card = cards[0];
-    const gap = 24;
-    return card.offsetWidth + gap;
-  }
-
-  function getMaxIndex() {
-    return Math.max(0, totalCards - getVisibleCount());
-  }
-
-  function buildDots() {
-    dotsContainer.innerHTML = '';
-    const maxIndex = getMaxIndex();
-    for (let i = 0; i <= maxIndex; i++) {
-      const dot = document.createElement('button');
-      dot.classList.add('carousel-dot');
-      dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
-      if (i === currentIndex) dot.classList.add('active');
-      dot.addEventListener('click', () => goTo(i));
-      dotsContainer.appendChild(dot);
-    }
-  }
-
-  function updateDots() {
-    const dots = dotsContainer.querySelectorAll('.carousel-dot');
-    dots.forEach((dot, i) => {
-      dot.classList.toggle('active', i === currentIndex);
-    });
-  }
-
-  function goTo(index) {
-    const maxIndex = getMaxIndex();
-    currentIndex = Math.max(0, Math.min(index, maxIndex));
-    const offset = currentIndex * getCardWidth();
-    track.style.transform = `translateX(-${offset}px)`;
-    prevBtn.disabled = currentIndex === 0;
-    nextBtn.disabled = currentIndex >= maxIndex;
-    updateDots();
-  }
-
-  prevBtn.addEventListener('click', () => goTo(currentIndex - 1));
-  nextBtn.addEventListener('click', () => goTo(currentIndex + 1));
-
-  // Touch / swipe support
-  let touchStartX = 0;
-  let touchEndX = 0;
-  track.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
-  track.addEventListener('touchend', (e) => {
-    touchEndX = e.changedTouches[0].clientX;
-    const diff = touchStartX - touchEndX;
-    if (Math.abs(diff) > 50) {
-      goTo(currentIndex + (diff > 0 ? 1 : -1));
-    }
-  });
-
-  buildDots();
-  goTo(0);
-
-  let resizeTimer;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      buildDots();
-      goTo(Math.min(currentIndex, getMaxIndex()));
-    }, 150);
-  });
-})();
-
-/* ---- Animated number ticker for advantage card numbers ---- */
-document.querySelectorAll('.adv-number').forEach((el) => {
-  const num = parseInt(el.textContent);
-  el.textContent = '00';
-  const obs = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        let count = 0;
-        const target = num;
-        const step = Math.max(1, Math.floor(target / 20));
-        const interval = setInterval(() => {
-          count = Math.min(count + step, target);
-          el.textContent = String(count).padStart(2, '0');
-          if (count >= target) clearInterval(interval);
-        }, 60);
-        obs.unobserve(el);
+/* ---- Split headings into words so they can rise in one by one ---- */
+function splitWords(el) {
+  let i = 0;
+  const walk = (node) => {
+    Array.from(node.childNodes).forEach(child => {
+      if (child.nodeType === Node.TEXT_NODE) {
+        const frag = document.createDocumentFragment();
+        child.textContent.split(/(\s+)/).forEach(part => {
+          if (!part) return;
+          if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+          const outer = document.createElement('span');
+          outer.className = 'w';
+          const inner = document.createElement('span');
+          inner.textContent = part;
+          inner.style.setProperty('--i', i++);
+          outer.appendChild(inner);
+          frag.appendChild(outer);
+        });
+        child.replaceWith(frag);
+      } else if (child.nodeType === Node.ELEMENT_NODE) {
+        walk(child);
       }
     });
-  }, { threshold: 0.5 });
-  obs.observe(el);
-});
+  };
+  walk(el);
+  el.classList.add('is-split');
+}
+if (canAnimate) {
+  document.querySelectorAll('.hero-headline, .section-title, .page-title').forEach(splitWords);
+}
+
+/* ---- Scroll reveal ---- */
+const revealSelector = [
+  '.section-header', isPhone ? '.services-carousel-wrapper' : '.service-card', '.advantage-card',
+  '.cta-inner', '.about-narrative-box', '.vision-quote-box', '.value-card', '.team-card',
+  '.strength-card', '.ai-cap-card', '.ai-tech-container', '.chapter-body', '.chapter-subheading',
+  '.chapter-prose-callout', '.mobile-feat-card', '.disciplines-list', '.tech-editorial-col',
+  '.tech-category-row', '.connected-path-node', '.delivery-para', '.benefit-item', '.contact-info',
+  '.contact-form-container', '.industry-card', '.quote-sidebar', '.quote-form-wrap'
+].join(',');
+
+if (canAnimate) {
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('is-visible');
+      revealObserver.unobserve(entry.target);
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll(revealSelector).forEach(el => {
+    // Stagger siblings in the same grid so cards arrive one after another
+    const siblings = Array.from(el.parentElement.children).filter(c => c.matches(revealSelector));
+    el.style.transitionDelay = `${Math.min(siblings.indexOf(el), 5) * 80}ms`;
+    el.classList.add('reveal');
+    revealObserver.observe(el);
+  });
+}
+
+/* ---- Count-up for the hero stats ---- */
+function countUp(el) {
+  const match = el.textContent.trim().match(/^(\d+)(.*)$/);
+  if (!match) return;
+  const target = parseInt(match[1], 10);
+  const suffix = match[2];
+  const start = performance.now();
+  const duration = 1600;
+  const tick = (now) => {
+    const p = Math.min((now - start) / duration, 1);
+    el.textContent = Math.round((1 - Math.pow(1 - p, 3)) * target) + suffix;
+    if (p < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+const heroStats = document.getElementById('hero-stats');
+if (heroStats && canAnimate) {
+  heroStats.classList.add('stats-waiting');
+  const statsObserver = new IntersectionObserver((entries) => {
+    if (!entries[0].isIntersecting) return;
+    heroStats.classList.replace('stats-waiting', 'stats-in');
+    heroStats.querySelectorAll('.stat-num').forEach(countUp);
+    statsObserver.disconnect();
+  }, { threshold: 0.4 });
+  statsObserver.observe(heroStats);
+}
+
+/* ---- Phone: services become a swipeable card carousel ---- */
+(function initServiceSwiper() {
+  const track = document.getElementById('services-track');
+  const dots = document.getElementById('services-dots');
+  if (!track || !dots) return;
+  const cards = Array.from(track.children);
+
+  cards.forEach((card, i) => {
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'swipe-dot';
+    dot.setAttribute('aria-label', `Show service ${i + 1}`);
+    dot.addEventListener('click', () => track.scrollTo({ left: card.offsetLeft - track.offsetLeft - 16, behavior: 'smooth' }));
+    dots.appendChild(dot);
+  });
+
+  let current = -1;
+  function setCurrent() {
+    const mid = track.scrollLeft + track.clientWidth / 2;
+    let best = 0, bestDist = Infinity;
+    cards.forEach((card, i) => {
+      const d = Math.abs(card.offsetLeft - track.offsetLeft + card.offsetWidth / 2 - mid);
+      if (d < bestDist) { bestDist = d; best = i; }
+    });
+    if (best === current) return;
+    current = best;
+    cards.forEach((c, i) => c.classList.toggle('is-current', i === best));
+    dots.querySelectorAll('.swipe-dot').forEach((d, i) => d.classList.toggle('active', i === best));
+  }
+  let ticking = false;
+  track.addEventListener('scroll', () => {
+    if (!ticking) { requestAnimationFrame(() => { setCurrent(); ticking = false; }); ticking = true; }
+  }, { passive: true });
+  window.addEventListener('resize', setCurrent);
+  setCurrent();
+
+  // The first time the carousel comes into view, peek at the next card to show it can be swiped
+  if (canAnimate && isPhone) {
+    const peek = new IntersectionObserver((entries) => {
+      if (!entries[0].isIntersecting) return;
+      peek.disconnect();
+      setTimeout(() => {
+        track.scrollTo({ left: 70, behavior: 'smooth' });
+        setTimeout(() => track.scrollTo({ left: 0, behavior: 'smooth' }), 650);
+      }, 700);
+    }, { threshold: 0.6 });
+    peek.observe(track);
+  }
+})();
 
 /* =============================================
    SUPABASE FORM SUBMISSIONS (Contact + Quote)
